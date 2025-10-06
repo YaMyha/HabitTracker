@@ -5,13 +5,13 @@ from typing import Optional, List
 
 # ---------- Пользователи ----------
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
 class UserOut(BaseModel):
     id: int
-    email: EmailStr
+    email: str
 
     class Config:
         from_attributes = True

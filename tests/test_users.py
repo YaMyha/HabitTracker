@@ -1,3 +1,6 @@
+import asyncio
+import random
+
 import pytest
 from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
@@ -7,17 +10,18 @@ from app.main import app
 async def test_register_and_login():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
+        email = "email" + str(random.randint(1, 1000))
         response = await client.post("/users/register", json={
-            "email": "test@example.com",
+            "email": email,
             "password": "password123"
         })
         assert response.status_code == 200
         data = response.json()
-        assert data["email"] == "test@example.com"
+        assert data["email"] == email
 
         # --- логин ---
         response = await client.post("/users/token", data={
-            "username": "test@example.com",
+            "username": email,
             "password": "password123"
         })
         assert response.status_code == 200
