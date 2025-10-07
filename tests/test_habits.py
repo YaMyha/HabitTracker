@@ -7,6 +7,7 @@ from app.main import app
 
 @pytest.mark.asyncio
 async def test_create_habit():
+    loop = asyncio.get_running_loop()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         email = "email" + str(random.randint(1, 1000))
