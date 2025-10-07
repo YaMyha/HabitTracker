@@ -29,7 +29,7 @@ def verify_password(plain, hashed):
 
 # ---------- Привычки ----------
 async def create_habit(db: AsyncSession, user_id: int, habit: schemas.HabitCreate):
-    db_habit = models.Habit(user_id=user_id, **habit.dict())
+    db_habit = models.Habit(user_id=user_id, **habit.model_dump())
     db.add(db_habit)
     await db.commit()
     await db.refresh(db_habit)
