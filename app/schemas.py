@@ -13,7 +13,7 @@ class UserOut(BaseModel):
     id: int
     email: str
 
-    class Config:
+    class ConfigDict:
         from_attributes = True
 
 
@@ -35,7 +35,7 @@ class HabitCreate(HabitBase):
 
 class HabitOut(HabitBase):
     id: int
-    class Config:
+    class ConfigDict:
         from_attributes = True
 
 
@@ -47,5 +47,5 @@ class RecordBase(BaseModel):
 
 class RecordOut(RecordBase):
     id: int
-    class Config:
+    class ConfigDict:
         from_attributes = True
