@@ -6,7 +6,7 @@ from httpx import AsyncClient
 from httpx._transports.asgi import ASGITransport
 from app.main import app
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_register_and_login():
     loop = asyncio.get_running_loop()
     transport = ASGITransport(app=app)

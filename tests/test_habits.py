@@ -5,7 +5,7 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(loop_scope="session")
 async def test_create_habit():
     loop = asyncio.get_running_loop()
     transport = ASGITransport(app=app)
