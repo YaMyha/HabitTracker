@@ -1,3 +1,5 @@
+import random
+
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -6,9 +8,14 @@ from app.main import app
 async def test_create_habit():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
+        email = "email" + str(random.randint(1, 1000))
+        response = await client.post("/users/register", json={
+            "email": email,
+            "password": "password123"
+        })
         # авторизация (берём токен от предыдущего теста)
         login_resp = await client.post("/users/token", data={
-            "username": "test@example.com",
+            "username": email,
             "password": "password123"
         })
         token = login_resp.json()["access_token"]
