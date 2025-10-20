@@ -12,3 +12,10 @@ celery_app.conf.update(
 )
 
 celery_app.autodiscover_tasks(["app.reminder"])
+
+celery_app.conf.beat_schedule = {
+    "send-reminders-every-10-minutes": {
+        "task": "app.reminder.send_daily_reminders",
+        "schedule": 10.0,
+    },
+}
