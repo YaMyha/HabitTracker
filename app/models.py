@@ -8,6 +8,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, nullable=False)
     password_hash = Column(String, nullable=False)
+    telegram_chat_id = Column(String, nullable=True)
     habits = relationship("Habit", back_populates="user")
 
 class Habit(Base):
@@ -16,6 +17,7 @@ class Habit(Base):
     title = Column(String, nullable=False)
     description = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
+    reminder_date = Column(Date, nullable=False)
     user = relationship("User", back_populates="habits")
     records = relationship("Record", back_populates="habit")
 

@@ -7,6 +7,7 @@ from typing import Optional, List
 class UserCreate(BaseModel):
     email: str
     password: str
+    telegram_chat_id: Optional[str] = None
 
 
 class UserOut(BaseModel):
@@ -27,6 +28,7 @@ class Token(BaseModel):
 class HabitBase(BaseModel):
     title: str
     description: Optional[str] = None
+    reminder_date: Optional[date] = None
 
 
 class HabitCreate(HabitBase):
