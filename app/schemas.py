@@ -1,5 +1,5 @@
 from datetime import date
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 
 
@@ -29,6 +29,20 @@ class HabitBase(BaseModel):
     title: str
     description: Optional[str] = None
     reminder_date: Optional[date] = None
+    
+    @field_validator('reminder_date', mode='before')
+    @classmethod
+    def validate_reminder_date(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+    
+    @field_validator('description', mode='before')
+    @classmethod
+    def validate_description(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
 
 class HabitCreate(HabitBase):

@@ -52,3 +52,17 @@ services:
       - web
     volumes:
       - .:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://web:8000
+    depends_on:
+      - web
