@@ -1,4 +1,5 @@
 """Notification tasks for habit reminders."""
+import datetime
 import httpx
 from app.celery_app import celery_app
 from app.core.config import settings
@@ -40,8 +41,12 @@ def send_daily_reminders(self):
                     print(f"[WARN] User {user.id} has no telegram_chat_id - skipping")
                     continue
                 
-                # Get user's habits that need reminders today
-                due_habits = [habit for habit in user.habits if habit.reminder_date]
+                # Get user's habits that need reminders now
+                now = datetime.datetime.now(datetime.UTC)
+                # Convert to naive datetime for comparison with database values
+                now_naive = now.replace(tzinfo=None)
+                due_habits = [habit for habit in user.habits 
+                             if habit.reminder_date and habit.reminder_date <= now_naive]
                 
                 if not due_habits:
                     print(f"[INFO] User {user.id} has no habits due today")

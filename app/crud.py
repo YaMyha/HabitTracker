@@ -56,7 +56,9 @@ async def delete_habit(db: AsyncSession, habit_id: int, user_id: int):
 # ---------- Sync versions for Celery tasks ----------
 def get_users_with_due_reminders_sync(db: Session):
     """Synchronous version for Celery tasks."""
-    today = datetime.datetime.now(datetime.UTC).date()
+    now = datetime.datetime.now(datetime.UTC)
+    # Convert to naive datetime for database comparison
+    now_naive = now.replace(tzinfo=None)
 
     stmt = (
         select(User)
@@ -64,7 +66,7 @@ def get_users_with_due_reminders_sync(db: Session):
         .options(selectinload(User.habits))
         .where(
             Habit.reminder_date.is_not(None),
-            Habit.reminder_date <= today
+            Habit.reminder_date <= now_naive
         )
         .distinct()
     )

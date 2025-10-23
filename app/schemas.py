@@ -1,9 +1,8 @@
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 
 
-# ---------- Пользователи ----------
 class UserCreate(BaseModel):
     email: str
     password: str
@@ -18,17 +17,15 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
-# ---------- Токен ----------
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 
-# ---------- Привычки ----------
 class HabitBase(BaseModel):
     title: str
     description: Optional[str] = None
-    reminder_date: Optional[date] = None
+    reminder_date: Optional[datetime] = None
     
     @field_validator('reminder_date', mode='before')
     @classmethod
@@ -55,7 +52,6 @@ class HabitOut(HabitBase):
         from_attributes = True
 
 
-# ---------- Записи выполнения ----------
 class RecordBase(BaseModel):
     date: date
     completed: bool = False
@@ -63,5 +59,10 @@ class RecordBase(BaseModel):
 
 class RecordOut(RecordBase):
     id: int
+    habit_id: int
+    user_id: int
+    done: bool
+    note: str | None
+    created_at: datetime
     class ConfigDict:
         from_attributes = True
