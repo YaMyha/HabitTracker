@@ -1,0 +1,71 @@
+services:
+  db:
+    image: postgres:17
+    container_name: postgres_db_prod
+    restart: always
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=habits
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    env_file:
+      - .env
+    command: >
+      sh -c "
+        echo 'Waiting for DB...';
+        until python -c 'import psycopg2; psycopg2.connect(
+          dbname=\"$DB_NAME\", user=\"$DB_USER\", password=\"$DB_PASSWORD\", host=\"$DB_HOST\")' >/dev/null 2>&1; do sleep 1; done;
+        alembic upgrade head;
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  celery:
+    build: .
+    command: celery -A app.celery_app.celery_app worker --loglevel=info
+    depends_on:
+      - redis
+      - web
+    volumes:
+      - .:/app
+
+  celery-beat:
+    build: .
+    command: celery -A app.celery_app.celery_app beat --loglevel=info
+    depends_on:
+      - redis
+      - web
+    volumes:
+      - .:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
