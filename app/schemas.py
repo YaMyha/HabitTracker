@@ -53,16 +53,17 @@ class HabitOut(HabitBase):
 
 
 class RecordBase(BaseModel):
-    date: date
-    completed: bool = False
+    habit_id: int
+    date: datetime
+
+
+class RecordCreate(RecordBase):
+    pass
 
 
 class RecordOut(RecordBase):
     id: int
     habit_id: int
-    user_id: int
-    done: bool
-    note: str | None
-    created_at: datetime
+    date: datetime
     class ConfigDict:
         from_attributes = True

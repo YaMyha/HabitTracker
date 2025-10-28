@@ -68,4 +68,21 @@ export const habitsAPI = {
   },
 };
 
+export const recordsAPI = {
+  getRecords: async (habitId: number): Promise<Record[]> => {
+    const response = await api.get(`/records/`, { params: { habit_id: habitId } });
+    return response.data;
+  },
+
+  createRecord: async (habitId: number, date: string): Promise<Record> => {
+    const payload = { habit_id: habitId, date };
+    const response = await api.post('/records/', payload);
+    return response.data;
+  },
+
+  deleteRecord: async (habitId: number, recordId: number): Promise<void> => {
+    await api.delete(`/records/${recordId}`, { params: { habit_id: habitId } });
+  },
+};
+
 export default api;

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, Target, Trash2, CheckCircle, Circle } from 'lucide-react';
-import { Habit, HabitCreate } from '../types';
-import { habitsAPI } from '../services/api';
+import { Habit, HabitCreate, Record } from '../types';
+import { habitsAPI, recordsAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { format, isToday, isBefore, addDays } from 'date-fns';
+import { format, isToday, isBefore, startOfMonth, endOfMonth, addMonths } from 'date-fns';
 
 const Dashboard: React.FC = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -14,6 +14,8 @@ const Dashboard: React.FC = () => {
     description: '',
     reminder_date: format(new Date(), 'yyyy-MM-dd'),
   });
+  const [recordsByHabit, setRecordsByHabit] = useState<{ [key: number]: Record[] }>({});
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   useEffect(() => {
     loadHabits();
@@ -24,6 +26,15 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       const habitsData = await habitsAPI.getHabits();
       setHabits(habitsData);
+      // Load records for each habit
+      const recordsPromises = habitsData.map(async (h) => {
+        const recs = await recordsAPI.getRecords(h.id);
+        return [h.id, recs] as [number, Record[]];
+      });
+      const results = await Promise.all(recordsPromises);
+      const map: { [key: number]: Record[] } = {};
+      results.forEach(([hid, recs]) => { map[hid] = recs; });
+      setRecordsByHabit(map);
     } catch (error: any) {
       toast.error('Failed to load habits');
     } finally {
@@ -97,6 +108,67 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const isCompletedToday = (habitId: number) => {
+    const list: Record[] = recordsByHabit[habitId] || [];
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    return list.some((r) => format(new Date(r.date), 'yyyy-MM-dd') === todayStr);
+  };
+
+  const getTodayRecord = (habitId: number): Record | undefined => {
+    const list: Record[] = recordsByHabit[habitId] || [];
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    return list.find((r) => format(new Date(r.date), 'yyyy-MM-dd') === todayStr);
+  };
+
+  const hasRecordOn = (habitId: number, date: Date) => {
+    const list = recordsByHabit[habitId] || [];
+    const target = date.toISOString().slice(0, 10);
+    return list.some((r) => r.date.slice(0, 10) === target);
+  };
+
+  const getAllDaysOfMonth = (monthDate: Date) => {
+    const start = startOfMonth(monthDate);
+    const end = endOfMonth(monthDate);
+    const days: Date[] = [];
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      days.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return days;
+  };
+
+  const prevMonth = () => setCurrentMonth((d) => addMonths(d, -1));
+  const nextMonth = () => setCurrentMonth((d) => addMonths(d, 1));
+
+  const toggleToday = async (habitId: number) => {
+    try {
+      if (isCompletedToday(habitId)) {
+        const rec = getTodayRecord(habitId);
+        if (rec) {
+          await recordsAPI.deleteRecord(habitId, rec.id);
+          // update local state
+          setRecordsByHabit((prev: any) => {
+            const copy = { ...(prev || {}) };
+            copy[habitId] = (copy[habitId] || []).filter((r: Record) => r.id !== rec.id);
+            return copy;
+          });
+          toast.success('Marked as not completed');
+        }
+      } else {
+        const created = await recordsAPI.createRecord(habitId, new Date().toISOString());
+        setRecordsByHabit((prev: any) => {
+          const copy = { ...(prev || {}) };
+          copy[habitId] = [ ...(copy[habitId] || []), created ];
+          return copy;
+        });
+        toast.success('Marked as completed');
+      }
+    } catch (e) {
+      toast.error('Failed to update record');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -107,6 +179,14 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Month selector */}
+      <div className="flex items-center justify-between">
+        <button onClick={prevMonth} className="btn-secondary">Prev</button>
+        <div className="text-lg font-semibold text-gray-900">
+          {format(currentMonth, 'MMMM yyyy')}
+        </div>
+        <button onClick={nextMonth} className="btn-secondary">Next</button>
+      </div>
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -231,11 +311,62 @@ const Dashboard: React.FC = () => {
                   </span>
                 </div>
                 
-                {/* Placeholder for habit completion tracking */}
+                {/* Habit completion tracking */}
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-                    <Circle className="h-4 w-4" />
-                    <span>Mark as completed</span>
+                  <button
+                    onClick={() => toggleToday(habit.id)}
+                    className="w-full flex items-center justify-center space-x-2 text-sm text-gray-700 hover:text-primary-700"
+                  >
+                    {isCompletedToday(habit.id) ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span>Completed Today</span>
+                      </>
+                    ) : (
+                      <>
+                        <Circle className="h-4 w-4" />
+                        <span>Mark as completed</span>
+                      </>
+                    )}
+                  </button>
+                  {/* Month calendar grid */}
+                  <div className="mt-4">
+                    <div className="grid grid-cols-7 gap-1 text-[10px] text-gray-500 mb-1">
+                      {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+                        <div key={d} className="text-center">{d}</div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {(() => {
+                        const days = getAllDaysOfMonth(currentMonth);
+                        const leadingBlanks = new Date(days[0]).getDay();
+                        const blanks = Array.from({ length: leadingBlanks });
+                        return (
+                          <>
+                            {blanks.map((_, i) => (
+                              <div key={`b-${i}`} />
+                            ))}
+                            {days.map((d) => {
+                              const done = hasRecordOn(habit.id, d);
+                              const isTodayFlag = format(d, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
+                              return (
+                                <div
+                                  key={d.toISOString()}
+                                  className={`h-8 rounded-md flex items-center justify-center text-xs border ${done ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'} ${isTodayFlag ? 'ring-2 ring-primary-400' : ''}`}
+                                  title={format(d, 'PPP')}
+                                >
+                                  {format(d, 'd')}
+                                </div>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <div className="mt-2 flex items-center justify-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-green-100 border border-green-200 inline-block" /> Completed</div>
+                      <div className="flex items-center gap-1"><span className="h-3 w-3 rounded-sm bg-gray-50 border border-gray-200 inline-block" /> Not completed</div>
+                    </div>
                   </div>
                 </div>
               </div>

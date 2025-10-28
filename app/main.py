@@ -1,11 +1,12 @@
 import uvicorn
 from fastapi import FastAPI
-from app.routes import users, habits
+from app.routes import users, habits, records
 
 app = FastAPI(title="Async Habit Tracker API")
 
 app.include_router(users.router)
 app.include_router(habits.router)
+app.include_router(records.router)
 
 @app.get("/")
 async def root():

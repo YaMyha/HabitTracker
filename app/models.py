@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Boolean, DateTime, func
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -17,7 +17,10 @@ class Habit(Base):
     title = Column(String, nullable=False)
     description = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
-    reminder_date = Column(DateTime, nullable=True)
+    reminder_date = Column(
+        DateTime(timezone=True),
+        nullable=True
+    )
     user = relationship("User", back_populates="habits")
     records = relationship("Record", back_populates="habit")
 
@@ -25,6 +28,9 @@ class Record(Base):
     __tablename__ = "records"
     id = Column(Integer, primary_key=True)
     habit_id = Column(Integer, ForeignKey("habits.id"))
-    date = Column(Date)
-    completed = Column(Boolean, default=False)
+    date = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
     habit = relationship("Habit", back_populates="records")

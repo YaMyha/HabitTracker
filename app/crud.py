@@ -5,12 +5,12 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, Session
 
 from app import schemas
-from app.models import User, Habit
+from app.models import User, Habit, Record
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ---------- Пользователи ----------
+# ---------- Users ----------
 async def get_user_by_email(db: AsyncSession, email: str):
     result = await db.execute(select(User).where(User.email == email))
     return result.scalars().first()
@@ -32,7 +32,7 @@ def verify_password(plain, hashed):
     return pwd_context.verify(plain, hashed)
 
 
-# ---------- Привычки ----------
+# ---------- Habits ----------
 async def create_habit(db: AsyncSession, user_id: int, habit: schemas.HabitCreate):
     db_habit = Habit(user_id=user_id, **habit.model_dump())
     db.add(db_habit)
@@ -51,6 +51,26 @@ async def delete_habit(db: AsyncSession, habit_id: int, user_id: int):
         await db.delete(habit)
         await db.commit()
     return habit
+
+# ---------- Records ----------
+async def create_record(db: AsyncSession, record: schemas.RecordCreate):
+    db_record = Record(**record.model_dump())
+    db.add(db_record)
+    await db.commit()
+    await db.refresh(db_record)
+    return db_record
+
+async def get_records(db: AsyncSession, habit_id: int):
+    result = await db.execute(select(Record).where(Record.habit_id == habit_id))
+    return result.scalars().all()
+
+async def delete_record(db: AsyncSession, habit_id: int, record_id: int):
+    result = await db.execute(select(Record).where(Record.id == record_id, Record.habit_id == habit_id))
+    record = result.scalars().first()
+    if record:
+        await db.delete(record)
+        await db.commit()
+    return record
 
 
 # ---------- Sync versions for Celery tasks ----------

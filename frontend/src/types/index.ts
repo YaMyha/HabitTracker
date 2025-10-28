@@ -29,8 +29,13 @@ export interface HabitCreate {
 
 export interface Record {
   id: number;
+  habit_id: number;
   date: string;
-  completed: boolean;
+}
+
+export interface RecordCreate {
+  habit_id: number;
+  date: string;
 }
 
 export interface AuthContextType {
