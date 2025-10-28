@@ -122,8 +122,8 @@ const Dashboard: React.FC = () => {
 
   const hasRecordOn = (habitId: number, date: Date) => {
     const list = recordsByHabit[habitId] || [];
-    const target = date.toISOString().slice(0, 10);
-    return list.some((r) => r.date.slice(0, 10) === target);
+    const target = format(date, 'yyyy-MM-dd');
+    return list.some((r) => format(new Date(r.date), 'yyyy-MM-dd') === target);
   };
 
   const getAllDaysOfMonth = (monthDate: Date) => {
